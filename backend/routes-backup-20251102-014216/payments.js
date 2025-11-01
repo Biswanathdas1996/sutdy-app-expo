@@ -3,28 +3,19 @@ const router = express.Router();
 const db = require('../database');
 
 // Process payment
-router.post('/process', async (req, res) => {
+router.post('/process', (req, res) => {
   try {
-    const { token, planId, amount, couponCode, paymentMethod } = req.body;
+    const { planId, amount, couponCode, paymentMethod } = req.body;
 
-    if (!token || !planId || !amount || !paymentMethod) {
+    if (!planId || !amount || !paymentMethod) {
       return res.status(400).json({
         success: false,
-        message: 'Token, plan ID, amount, and payment method are required'
-      });
-    }
-
-    // Verify session and get user
-    const session = await db.findSessionByToken(token);
-    if (!session) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid session token'
+        message: 'Plan ID, amount, and payment method are required'
       });
     }
 
     // Validate plan exists
-    const plan = await db.getPlanById(planId);
+    const plan = db.getPlanById(planId);
     if (!plan) {
       return res.status(404).json({
         success: false,
@@ -33,51 +24,42 @@ router.post('/process', async (req, res) => {
     }
 
     // Apply coupon if provided
-    let finalAmount = parseFloat(amount);
+    let finalAmount = amount;
     let discountAmount = 0;
 
     if (couponCode) {
-      const validation = await db.validateCoupon(couponCode);
-      if (validation.valid) {
-        if (validation.discountType === 'percentage') {
-          discountAmount = (finalAmount * validation.discountValue) / 100;
-        } else {
-          discountAmount = validation.discountValue;
-        }
-        finalAmount = finalAmount - discountAmount;
-        
-        // Increment coupon usage
-        await db.incrementCouponUsage(couponCode);
+      const validation = db.validateCoupon(couponCode, amount);
+      if (validation.isValid) {
+        discountAmount = validation.discountAmount;
+        finalAmount = validation.finalAmount;
       }
     }
 
-    // Generate order ID
-    const orderId = `order_${Date.now()}_${session.userId}`;
-
     // Create payment
-    const payment = await db.createPayment({
-      userId: session.userId,
+    const payment = db.createPayment({
       planId,
       amount: finalAmount,
+      originalAmount: amount,
+      discountAmount,
       couponCode,
-      orderId
+      paymentMethod
     });
 
     // Simulate successful payment
     // In production, integrate with actual payment gateway
     setTimeout(() => {
-      db.updatePaymentStatus(payment.id, 'completed', null);
+      db.updatePaymentStatus(payment.paymentId, 'completed');
     }, 2000);
 
     res.json({
       success: true,
       message: 'Payment initiated successfully',
-      paymentId: payment.id,
-      orderId: payment.razorpayOrderId,
+      paymentId: payment.paymentId,
+      orderId: payment.orderId,
       status: payment.status,
       amount: finalAmount,
-      currency: 'INR',
-      discountAmount
+      currency: payment.currency,
+      paymentUrl: `https://payment-gateway.example.com/pay/${payment.paymentId}`
     });
   } catch (error) {
     console.error('Process payment error:', error);
@@ -90,10 +72,10 @@ router.post('/process', async (req, res) => {
 });
 
 // Get payment status
-router.get('/:paymentId/status', async (req, res) => {
+router.get('/:paymentId/status', (req, res) => {
   try {
     const { paymentId } = req.params;
-    const payment = await db.getPaymentById(paymentId);
+    const payment = db.findPaymentById(paymentId);
 
     if (!payment) {
       return res.status(404).json({
@@ -106,12 +88,13 @@ router.get('/:paymentId/status', async (req, res) => {
       success: true,
       message: 'Payment status retrieved successfully',
       payment: {
-        paymentId: payment.id,
-        orderId: payment.razorpayOrderId,
+        paymentId: payment.paymentId,
+        orderId: payment.orderId,
         status: payment.status,
         amount: payment.amount,
-        currency: 'INR',
-        createdAt: payment.createdAt
+        currency: payment.currency,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt
       }
     });
   } catch (error) {

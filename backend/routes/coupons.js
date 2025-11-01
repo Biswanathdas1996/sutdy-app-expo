@@ -3,34 +3,50 @@ const router = express.Router();
 const db = require('../database');
 
 // Validate coupon
-router.post('/validate', (req, res) => {
+router.post('/validate', async (req, res) => {
   try {
-    const { couponCode, planId, amount } = req.body;
+    const { code, amount } = req.body;
 
-    if (!couponCode || !amount) {
+    if (!code) {
       return res.status(400).json({
         success: false,
-        message: 'Coupon code and amount are required'
+        message: 'Coupon code is required',
+        valid: false
       });
     }
 
-    const validation = db.validateCoupon(couponCode, amount);
+    const validation = await db.validateCoupon(code);
 
-    if (!validation.isValid) {
+    if (!validation.valid) {
       return res.status(400).json({
         success: false,
-        message: validation.message,
-        isValid: false
+        message: validation.message || 'Invalid coupon',
+        valid: false
       });
+    }
+
+    // Calculate discount if amount is provided
+    let discountAmount = 0;
+    let finalAmount = amount ? parseFloat(amount) : 0;
+    
+    if (amount) {
+      if (validation.discountType === 'percentage') {
+        discountAmount = (finalAmount * validation.discountValue) / 100;
+      } else {
+        discountAmount = validation.discountValue;
+      }
+      finalAmount = Math.max(0, finalAmount - discountAmount);
     }
 
     res.json({
       success: true,
       message: 'Coupon is valid',
-      isValid: true,
-      coupon: validation.coupon,
-      discountAmount: validation.discountAmount,
-      finalAmount: validation.finalAmount
+      valid: true,
+      code: validation.code,
+      discountType: validation.discountType,
+      discountValue: validation.discountValue,
+      discountAmount,
+      finalAmount
     });
   } catch (error) {
     console.error('Validate coupon error:', error);

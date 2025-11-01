@@ -7,6 +7,15 @@ CREATE TABLE IF NOT EXISTS users (
   learning_goals TEXT[],
   skills_focus TEXT[],
   speaking_partner VARCHAR(10),
+  whatsapp_number VARCHAR(15),
+  age VARCHAR(10),
+  gender VARCHAR(20),
+  country VARCHAR(100),
+  english_skills TEXT[],
+  highest_qualification VARCHAR(255),
+  speaking_partner_interest VARCHAR(10),
+  about_you TEXT,
+  profile_photo TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -23,7 +32,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- Create Plans table
 CREATE TABLE IF NOT EXISTS plans (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
+  name VARCHAR(100) UNIQUE NOT NULL,
   price DECIMAL(10, 2) NOT NULL,
   duration INTEGER NOT NULL,
   features TEXT[] NOT NULL,
@@ -69,18 +78,18 @@ CREATE TABLE IF NOT EXISTS memberships (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default plans
+-- Insert default plans (using ON CONFLICT to avoid duplicates)
 INSERT INTO plans (name, price, duration, features, is_popular) VALUES
   ('Basic', 499.00, 1, ARRAY['1-month access', 'Basic lessons', 'Community support', 'Progress tracking'], FALSE),
   ('Pro', 1299.00, 3, ARRAY['3-month access', 'Advanced lessons', 'Priority support', 'Speaking practice', 'Personalized feedback'], TRUE),
   ('Premium', 2299.00, 6, ARRAY['6-month access', 'All lessons', '24/7 support', 'Weekly 1-on-1 sessions', 'Certificate of completion', 'Lifetime resources'], FALSE)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name) DO NOTHING;
 
 -- Insert default coupons
 INSERT INTO coupons (code, discount_type, discount_value, is_active) VALUES
   ('WELCOME50', 'percentage', 50.00, TRUE),
   ('SAVE100', 'fixed', 100.00, TRUE)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (code) DO NOTHING;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_mobile ON users(mobile);

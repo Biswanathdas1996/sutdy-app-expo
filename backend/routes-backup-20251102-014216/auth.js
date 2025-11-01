@@ -5,8 +5,6 @@ const db = require('../database');
 // Register endpoint
 router.post('/register', async (req, res) => {
   try {
-    console.log('🔵 Register endpoint hit:', req.body);
-    
     const { fullName, mobileNumber } = req.body;
 
     if (!fullName || !mobileNumber) {
@@ -16,13 +14,11 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    console.log('🔵 Checking if user exists...');
     // Check if user already exists
     let user = await db.findUserByMobile(mobileNumber);
     let isNewUser = false;
 
     if (!user) {
-      console.log('🔵 Creating new user...');
       // Create new user
       user = await db.createUser({
         fullName,
@@ -31,14 +27,10 @@ router.post('/register', async (req, res) => {
         mobileNumber
       });
       isNewUser = true;
-      console.log('🔵 User created:', user);
     }
 
-    console.log('🔵 Creating session for user:', user.userId);
     // Create session
     const session = await db.createSession(user.userId);
-    
-    console.log('Session created:', session); // DEBUG
 
     res.json({
       success: true,
@@ -50,8 +42,7 @@ router.post('/register', async (req, res) => {
       isNewUser
     });
   } catch (error) {
-    console.error('❌ Registration error:', error);
-    console.error('❌ Error stack:', error.stack);
+    console.error('Registration error:', error);
     res.status(500).json({
       success: false,
       message: 'Registration failed',

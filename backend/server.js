@@ -6,16 +6,22 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware - Allow ALL headers and origins for development
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
+  allowedHeaders: '*', // Allow ALL headers
+  credentials: true,
+  exposedHeaders: ['x-auth-token', 'x-session-id'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Handle preflight requests for all routes
+app.options('*', cors());
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -101,6 +107,9 @@ app.listen(PORT, () => {
   console.log(`\n🚀 Server running on port ${PORT}`);
   console.log(`📍 http://localhost:${PORT}`);
   console.log(`💚 Health check: http://localhost:${PORT}/api/health\n`);
+}).on('error', (err) => {
+  console.error('❌ Server error:', err);
+  process.exit(1);
 });
 
 module.exports = app;

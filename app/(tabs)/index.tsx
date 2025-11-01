@@ -15,16 +15,21 @@ import {
 import { SimpleUserProfileComponent } from "@/app/components/screens/SimpleUserProfileComponent";
 import { useSpeech } from "@/app/hooks/useSpeech";
 import { useOnboarding } from "@/app/hooks/useOnboarding";
+import { AuthService } from "@/app/services/authService";
+import { ActivityIndicator, View } from "react-native";
+import { Colors } from "@/constants/Colors";
 
 export default function WelcomeScreen() {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [showSkipPopup, setShowSkipPopup] = useState(false);
   const [showBenefitsModal, setShowBenefitsModal] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const { isSpeaking, speakText, stopSpeaking } = useSpeech();
   const {
     currentStep,
+    setCurrentStep,
     userAnswers,
     handleNext,
     handleLevelSelect,
@@ -38,6 +43,28 @@ export default function WelcomeScreen() {
     handleRegistrationSuccess,
     isLoading,
   } = useOnboarding();
+
+  // Check if user is already logged in on component mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      setIsCheckingAuth(true);
+      const isLoggedIn = await AuthService.isLoggedIn();
+      if (isLoggedIn) {
+        const user = await AuthService.getCurrentUser();
+        console.log("User is logged in:", user);
+        // Navigate to profile if user is logged in
+        setCurrentStep("userProfile");
+      }
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
 
   // Render the appropriate screen based on current step
   const renderCurrentStep = () => {
@@ -178,6 +205,16 @@ export default function WelcomeScreen() {
         break;
     }
   }, [currentStep, name]);
+
+  // Show loading screen while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.light.background }}>
+        <ActivityIndicator size="large" color={Colors.light.primary} />
+        <ThemedText style={{ marginTop: 16 }}>Loading...</ThemedText>
+      </View>
+    );
+  }
 
   return (
     <>

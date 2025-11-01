@@ -378,7 +378,7 @@ export const MembershipFormModal: React.FC<MembershipFormModalProps> = ({
       if (response.success) {
         Alert.alert(
           "Success!",
-          "Your membership application has been submitted successfully. We will contact you soon.",
+          "Your membership application has been submitted successfully. Please login with your WhatsApp number to access your profile.",
           [
             {
               text: "OK",

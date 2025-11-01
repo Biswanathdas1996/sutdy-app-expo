@@ -12,6 +12,27 @@ export class StorageService {
     userData: User
   ): Promise<void> {
     try {
+      console.log("saveUserSession called with:", {
+        testResult,
+        userData,
+      });
+
+      // Validate required fields
+      if (!testResult.authToken) {
+        console.error("Missing authToken in testResult");
+        throw new Error("authToken is required");
+      }
+
+      if (!testResult.sessionId) {
+        console.error("Missing sessionId in testResult");
+        throw new Error("sessionId is required");
+      }
+
+      if (!testResult.userId) {
+        console.error("Missing userId in testResult");
+        throw new Error("userId is required");
+      }
+
       const user: User = {
         ...userData,
         userId: testResult.userId,
@@ -43,8 +64,17 @@ export class StorageService {
         authToken: testResult.authToken.substring(0, 8) + "...",
         sessionId: testResult.sessionId.substring(0, 8) + "...",
       });
+
+      // Verify the save worked
+      const savedSessionId = await AsyncStorage.getItem(SESSION_ID_KEY);
+      const savedAuthToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      console.log("Verified saved values:", {
+        sessionId: savedSessionId?.substring(0, 8) + "...",
+        authToken: savedAuthToken?.substring(0, 8) + "...",
+      });
     } catch (error) {
       console.error("Error saving user session:", error);
+      throw error;
     }
   }
 
@@ -123,22 +153,32 @@ export class StorageService {
     const sessionId = await this.getSessionId();
     const userId = await this.getUserId();
 
+    console.log("getAuthHeaders - Retrieved values:", {
+      authToken: authToken ? authToken.substring(0, 8) + "..." : "null",
+      sessionId: sessionId ? sessionId.substring(0, 8) + "..." : "null",
+      userId: userId ? userId.substring(0, 8) + "..." : "null",
+    });
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
 
-    if (authToken) {
+    // Only add Authorization header if authToken exists and is not null/undefined
+    if (authToken && authToken !== "null" && authToken !== "undefined") {
       headers["Authorization"] = `Bearer ${authToken}`;
     }
 
-    if (sessionId) {
+    // Only add X-Session-ID header if sessionId exists and is not null/undefined
+    if (sessionId && sessionId !== "null" && sessionId !== "undefined") {
       headers["X-Session-ID"] = sessionId;
     }
 
-    if (userId) {
+    // Only add X-User-ID header if userId exists and is not null/undefined
+    if (userId && userId !== "null" && userId !== "undefined") {
       headers["X-User-ID"] = userId;
     }
 
+    console.log("getAuthHeaders - Final headers:", headers);
     return headers;
   }
 }

@@ -42,8 +42,16 @@ export const BenefitsModal: React.FC<BenefitsModalProps> = ({
   };
 
   const handleMembershipSuccess = () => {
-    // Navigate to profile tab after successful membership
-    router.push("/(tabs)/explore");
+    // Close modals first
+    setShowMembershipForm(false);
+    onClose();
+    
+    // Navigate to login screen after successful registration
+    // The user will need to login with their WhatsApp number
+    setTimeout(() => {
+      // Reload the current route to show welcome/login screen
+      router.replace("/(tabs)");
+    }, 300);
   };
 
   return (

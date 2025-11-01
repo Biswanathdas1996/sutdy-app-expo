@@ -3,11 +3,10 @@ const router = express.Router();
 const db = require('../database');
 
 // Register membership
-router.post('/register', async (req, res) => {
+router.post('/register', (req, res) => {
   try {
     const {
       fullName,
-      name,
       mobileNumber,
       whatsappNumber,
       age,
@@ -20,23 +19,20 @@ router.post('/register', async (req, res) => {
       profilePhotoBase64
     } = req.body;
 
-    // Use name or fullName (accept both for compatibility)
-    const memberName = name || fullName;
-
     // Validate required fields
-    if (!memberName || !mobileNumber) {
+    if (!fullName || !mobileNumber) {
       return res.status(400).json({
         success: false,
-        message: 'Name and mobile number are required',
+        message: 'Full name and mobile number are required',
         errors: [
-          { path: ['name'], message: 'Name is required' },
+          { path: ['fullName'], message: 'Full name is required' },
           { path: ['mobileNumber'], message: 'Mobile number is required' }
         ]
       });
     }
 
     // Check if membership already exists
-    const existingMembership = await db.findMembershipByMobile(mobileNumber);
+    const existingMembership = db.findMembershipByMobile(mobileNumber);
     if (existingMembership) {
       return res.status(400).json({
         success: false,
@@ -45,8 +41,8 @@ router.post('/register', async (req, res) => {
     }
 
     // Create membership
-    const membership = await db.createMembershipRegistration({
-      fullName: memberName,
+    const membership = db.createMembership({
+      fullName,
       mobileNumber,
       whatsappNumber,
       age,

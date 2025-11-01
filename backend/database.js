@@ -134,6 +134,7 @@ class Database {
   // Session methods
   async createSession(userId) {
     const token = uuidv4();
+    const sessionId = uuidv4(); // Add unique session ID
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30); // 30 days from now
 
@@ -148,7 +149,8 @@ class Database {
       const result = await pool.query(query, values);
       const session = result.rows[0];
       return {
-        token: session.token,
+        authToken: session.token,
+        sessionId: session.id.toString(), // Use the database session ID
         userId: session.user_id.toString(),
         expiresAt: session.expires_at
       };
@@ -169,7 +171,26 @@ class Database {
     
     const session = result.rows[0];
     return {
-      token: session.token,
+      authToken: session.token,
+      sessionId: session.id.toString(),
+      userId: session.user_id.toString(),
+      expiresAt: session.expires_at
+    };
+  }
+
+  async findSessionById(sessionId) {
+    const query = `
+      SELECT * FROM sessions 
+      WHERE id = $1 AND expires_at > CURRENT_TIMESTAMP
+    `;
+    const result = await pool.query(query, [parseInt(sessionId)]);
+    
+    if (result.rows.length === 0) return null;
+    
+    const session = result.rows[0];
+    return {
+      authToken: session.token,
+      sessionId: session.id.toString(),
       userId: session.user_id.toString(),
       expiresAt: session.expires_at
     };
@@ -388,6 +409,80 @@ class Database {
       endDate: m.end_date,
       isActive: m.is_active
     }));
+  }
+
+  // Membership registration methods (for form-based membership without payment)
+  async findMembershipByMobile(mobileNumber) {
+    // Note: This searches in the users table for members who registered via membership form
+    // In the future, you might want a separate memberships_forms table
+    const query = 'SELECT * FROM users WHERE mobile = $1 AND whatsapp_number IS NOT NULL';
+    const result = await pool.query(query, [mobileNumber]);
+    
+    if (result.rows.length === 0) return null;
+    
+    const user = result.rows[0];
+    return {
+      id: user.id.toString(),
+      fullName: user.name,
+      mobileNumber: user.mobile,
+      whatsappNumber: user.whatsapp_number,
+      age: user.age,
+      gender: user.gender,
+      country: user.country,
+      englishSkills: user.english_skills || [],
+      highestQualification: user.highest_qualification,
+      speakingPartnerInterest: user.speaking_partner_interest,
+      aboutYou: user.about_you,
+      profilePhotoBase64: user.profile_photo
+    };
+  }
+
+  async createMembershipRegistration(membershipData) {
+    // This creates a user from membership form data
+    const query = `
+      INSERT INTO users (
+        mobile, name, whatsapp_number, age, gender, country,
+        english_skills, highest_qualification, speaking_partner_interest,
+        about_you, profile_photo
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING *
+    `;
+    
+    const values = [
+      membershipData.mobileNumber,
+      membershipData.fullName,
+      membershipData.whatsappNumber,
+      membershipData.age,
+      membershipData.gender,
+      membershipData.country,
+      membershipData.englishSkills || [],
+      membershipData.highestQualification,
+      membershipData.speakingPartnerInterest,
+      membershipData.aboutYou,
+      membershipData.profilePhotoBase64 || null
+    ];
+
+    try {
+      const result = await pool.query(query, values);
+      const user = result.rows[0];
+      return {
+        id: user.id.toString(),
+        fullName: user.name,
+        mobileNumber: user.mobile,
+        whatsappNumber: user.whatsapp_number,
+        age: user.age,
+        gender: user.gender,
+        country: user.country,
+        englishSkills: user.english_skills || [],
+        highestQualification: user.highest_qualification,
+        speakingPartnerInterest: user.speaking_partner_interest,
+        aboutYou: user.about_you
+      };
+    } catch (error) {
+      console.error('Error creating membership registration:', error);
+      throw error;
+    }
   }
 }
 

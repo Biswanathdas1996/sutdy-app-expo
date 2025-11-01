@@ -203,13 +203,6 @@ export class ApiService {
    */
   static async updateEnglishLevel(englishLevel: string) {
     try {
-      // Get current user session and tokens
-      const tokens = await AuthService.getUserTokens();
-
-      if (!tokens.sessionId) {
-        throw new Error("No session ID found. Please log in again.");
-      }
-
       // Map frontend level names to API-compatible format
       const levelMapping: Record<string, string> = {
         Beginner: "beginner",
@@ -224,8 +217,7 @@ export class ApiService {
         levelMapping[englishLevel] ||
         englishLevel.toLowerCase().replace(/\s+/g, "_");
 
-      const requestBody: EnglishLevelUpdateRequest = {
-        sessionId: tokens.sessionId,
+      const requestBody = {
         englishLevel: mappedLevel,
       };
 
@@ -268,13 +260,6 @@ export class ApiService {
    */
   static async updateLearningGoals(learningGoals: string[]) {
     try {
-      // Get current user session and tokens
-      const tokens = await AuthService.getUserTokens();
-
-      if (!tokens.sessionId) {
-        throw new Error("No session ID found. Please log in again.");
-      }
-
       // Map purpose names to API-compatible format
       const goalMapping: Record<string, string> = {
         "Job/Business": "career_advancement",
@@ -291,8 +276,7 @@ export class ApiService {
         (goal) => goalMapping[goal] || goal.toLowerCase().replace(/\s+/g, "_")
       );
 
-      const requestBody: LearningGoalsUpdateRequest = {
-        sessionId: tokens.sessionId,
+      const requestBody = {
         learningGoals: mappedGoals,
       };
 
@@ -329,13 +313,6 @@ export class ApiService {
    */
   static async updateSkillsFocus(skillsFocus: string[]) {
     try {
-      // Get current user session and tokens
-      const tokens = await AuthService.getUserTokens();
-
-      if (!tokens.sessionId) {
-        throw new Error("No session ID found. Please log in again.");
-      }
-
       // Map skill names to API-compatible format
       const skillMapping: Record<string, string> = {
         Speaking: "speaking",
@@ -352,8 +329,7 @@ export class ApiService {
           skillMapping[skill] || skill.toLowerCase().replace(/\s+/g, "_")
       );
 
-      const requestBody: SkillsFocusUpdateRequest = {
-        sessionId: tokens.sessionId,
+      const requestBody = {
         skillsFocus: mappedSkills,
       };
 
@@ -393,18 +369,10 @@ export class ApiService {
    */
   static async updateSpeakingPartner(partnerSelection: string) {
     try {
-      // Get current user session and tokens
-      const tokens = await AuthService.getUserTokens();
-
-      if (!tokens.sessionId) {
-        throw new Error("No session ID found. Please log in again.");
-      }
-
       // Map partner selection to boolean
       const needsSpeakingPartner = partnerSelection.toLowerCase() === "yes";
 
-      const requestBody: SpeakingPartnerUpdateRequest = {
-        sessionId: tokens.sessionId,
+      const requestBody = {
         needsSpeakingPartner,
       };
 
@@ -449,7 +417,7 @@ export class ApiService {
       console.log("Submitting membership data:", membershipData);
 
       const response = await fetch(
-        "https://55c1e6e5-cc5c-43f8-a6bc-09dbe6a8787c-00-30mdf3t7vv0b7.riker.replit.dev/api/membership/register",
+        `${API_CONFIG.BASE_URL}/api/membership/register`,
         {
           method: "POST",
           headers: {

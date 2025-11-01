@@ -3,9 +3,9 @@ const router = express.Router();
 const db = require('../database');
 
 // Get all plans
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => {
   try {
-    const plans = await db.getAllPlans();
+    const plans = db.getAllPlans();
 
     res.json({
       success: true,
@@ -33,10 +33,10 @@ router.get('/', async (req, res) => {
 });
 
 // Get plan by ID
-router.get('/:planId', async (req, res) => {
+router.get('/:planId', (req, res) => {
   try {
     const { planId } = req.params;
-    const plan = await db.getPlanById(planId);
+    const plan = db.getPlanById(planId);
 
     if (!plan) {
       return res.status(404).json({

@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../database');
 
 // Middleware to verify session
-const verifySession = async (req, res, next) => {
+const verifySession = (req, res, next) => {
   const authToken = req.headers.authorization?.replace('Bearer ', '');
   const sessionId = req.body.sessionId || req.headers['x-session-id'];
 
@@ -16,9 +16,9 @@ const verifySession = async (req, res, next) => {
 
   let session;
   if (authToken) {
-    session = await db.findSessionByToken(authToken);
+    session = db.findSessionByToken(authToken);
   } else if (sessionId) {
-    session = await db.findSessionById(sessionId);
+    session = db.findSessionById(sessionId);
   }
 
   if (!session) {
@@ -42,7 +42,7 @@ const verifySession = async (req, res, next) => {
 };
 
 // Update English level
-router.put('/english-level', verifySession, async (req, res) => {
+router.put('/english-level', verifySession, (req, res) => {
   try {
     const { englishLevel } = req.body;
 
@@ -53,7 +53,7 @@ router.put('/english-level', verifySession, async (req, res) => {
       });
     }
 
-    const user = await db.updateUser(req.userId, { englishLevel });
+    const user = db.updateUser(req.userId, { englishLevel });
 
     if (!user) {
       return res.status(404).json({
@@ -79,7 +79,7 @@ router.put('/english-level', verifySession, async (req, res) => {
 });
 
 // Update learning goals
-router.put('/learning-goals', verifySession, async (req, res) => {
+router.put('/learning-goals', verifySession, (req, res) => {
   try {
     const { learningGoals } = req.body;
 
@@ -90,7 +90,7 @@ router.put('/learning-goals', verifySession, async (req, res) => {
       });
     }
 
-    const user = await db.updateUser(req.userId, { learningGoals });
+    const user = db.updateUser(req.userId, { learningGoals });
 
     if (!user) {
       return res.status(404).json({
@@ -116,7 +116,7 @@ router.put('/learning-goals', verifySession, async (req, res) => {
 });
 
 // Update skills focus
-router.put('/skills-focus', verifySession, async (req, res) => {
+router.put('/skills-focus', verifySession, (req, res) => {
   try {
     const { skillsFocus } = req.body;
 
@@ -127,7 +127,7 @@ router.put('/skills-focus', verifySession, async (req, res) => {
       });
     }
 
-    const user = await db.updateUser(req.userId, { skillsFocus });
+    const user = db.updateUser(req.userId, { skillsFocus });
 
     if (!user) {
       return res.status(404).json({
@@ -153,7 +153,7 @@ router.put('/skills-focus', verifySession, async (req, res) => {
 });
 
 // Update speaking partner preference
-router.put('/speaking-partner', verifySession, async (req, res) => {
+router.put('/speaking-partner', verifySession, (req, res) => {
   try {
     const { needsSpeakingPartner } = req.body;
 
@@ -164,7 +164,7 @@ router.put('/speaking-partner', verifySession, async (req, res) => {
       });
     }
 
-    const user = await db.updateUser(req.userId, { needsSpeakingPartner });
+    const user = db.updateUser(req.userId, { needsSpeakingPartner });
 
     if (!user) {
       return res.status(404).json({
@@ -190,9 +190,9 @@ router.put('/speaking-partner', verifySession, async (req, res) => {
 });
 
 // Get user profile with memberships
-router.get('/profile-with-memberships', verifySession, async (req, res) => {
+router.get('/profile-with-memberships', verifySession, (req, res) => {
   try {
-    const user = await db.findUserById(req.userId);
+    const user = db.findUserById(req.userId);
 
     if (!user) {
       return res.status(404).json({
