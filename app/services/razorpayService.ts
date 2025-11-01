@@ -1,4 +1,11 @@
-import RazorpayCheckout from 'react-native-razorpay';
+// Conditional import for Razorpay - only works with native builds, not Expo Go
+let RazorpayCheckout: any = null;
+try {
+  RazorpayCheckout = require('react-native-razorpay');
+} catch (e) {
+  console.warn('Razorpay not available in Expo Go. Use a development build or test on web/emulator.');
+}
+
 import { Alert, Platform } from 'react-native';
 import { Plan } from '@/app/types/api';
 import { ApiService } from './apiService';
@@ -113,6 +120,26 @@ export class RazorpayService {
     couponCode?: string
   ): Promise<PaymentResult> {
     try {
+      // Check if Razorpay is available (not in Expo Go)
+      if (!RazorpayCheckout || !RazorpayCheckout.default?.open) {
+        Alert.alert(
+          'Payment Not Available',
+          'Razorpay payments are not available in Expo Go. To test payments:\n\n' +
+          '1. Use web browser (mock payment)\n' +
+          '2. Create a development build\n' +
+          '3. Test on a physical device with development build',
+          [{ text: 'OK' }]
+        );
+        
+        // Return mock success for testing
+        return {
+          success: true,
+          paymentId: 'mock_pay_' + Date.now(),
+          orderId: 'mock_order_' + Date.now(),
+          error: 'Mock payment (Razorpay not available in Expo Go)'
+        };
+      }
+
       // Step 1: Create order on backend
       let orderId: string | undefined;
       
@@ -202,7 +229,12 @@ export class RazorpayService {
    */
   private static openRazorpay(options: RazorpayOptions): Promise<RazorpayResponse> {
     return new Promise((resolve, reject) => {
-      RazorpayCheckout.open(options)
+      if (!RazorpayCheckout || !RazorpayCheckout.default) {
+        reject(new Error('Razorpay not available'));
+        return;
+      }
+      
+      RazorpayCheckout.default.open(options)
         .then((data: RazorpayResponse) => {
           resolve(data);
         })

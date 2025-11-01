@@ -1,7 +1,10 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL:
-    "https://55c1e6e5-cc5c-43f8-a6bc-09dbe6a8787c-00-30mdf3t7vv0b7.riker.replit.dev",
+  BASE_URL: "http://localhost:3000",
+  // For testing on physical device, use your computer's IP:
+  // BASE_URL: "http://192.168.x.x:3000",
+  // Original Replit URL (backup):
+  // BASE_URL: "https://55c1e6e5-cc5c-43f8-a6bc-09dbe6a8787c-00-30mdf3t7vv0b7.riker.replit.dev",
   ENDPOINTS: {
     AUTH: {
       REGISTER: "/api/auth/register",
