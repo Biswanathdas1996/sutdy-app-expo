@@ -12,6 +12,7 @@ import {
   SkipPopup,
   BenefitsModal,
   UserProfileComponent,
+  PlansScreenComponent,
 } from "@/app/components";
 import { useSpeech } from "@/app/hooks/useSpeech";
 import { useOnboarding } from "@/app/hooks/useOnboarding";
@@ -25,6 +26,7 @@ export default function WelcomeScreen() {
   const [showSkipPopup, setShowSkipPopup] = useState(false);
   const [showBenefitsModal, setShowBenefitsModal] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [otpLoginKey, setOtpLoginKey] = useState(0); // Force fresh OTP component
 
   const { isSpeaking, speakText, stopSpeaking } = useSpeech();
   const {
@@ -44,11 +46,40 @@ export default function WelcomeScreen() {
     isLoading,
   } = useOnboarding();
 
-  const handleMembershipSuccess = () => {
-    // Close the benefits modal
-    setShowBenefitsModal(false);
-    // Navigate to OTP login screen
-    setCurrentStep("otpLogin");
+  const handleMembershipSuccess = async (whatsappNumber?: string) => {
+    console.log("🎯 handleMembershipSuccess - Membership form completed");
+    console.log("📱 WhatsApp number from membership:", whatsappNumber);
+    
+    if (whatsappNumber) {
+      // Auto-login the user with their WhatsApp number using OTP "1234"
+      try {
+        console.log("🔐 Auto-logging in user with WhatsApp number...");
+        const loginResult = await AuthService.loginWithOTP({
+          mobileNumber: whatsappNumber,
+          otp: "1234"
+        });
+        
+        if (loginResult.success) {
+          console.log("✅ Auto-login successful, navigating to plans screen");
+          // Navigate to plans screen after successful login
+          setCurrentStep("plans");
+        } else {
+          console.error("❌ Auto-login failed:", loginResult.message);
+          // Fall back to manual login
+          setOtpLoginKey(prev => prev + 1);
+          setCurrentStep("otpLogin");
+        }
+      } catch (error) {
+        console.error("❌ Error during auto-login:", error);
+        // Fall back to manual login
+        setOtpLoginKey(prev => prev + 1);
+        setCurrentStep("otpLogin");
+      }
+    } else {
+      console.log("⚠️ No WhatsApp number provided, redirecting to login");
+      setOtpLoginKey(prev => prev + 1);
+      setCurrentStep("otpLogin");
+    }
   };
 
   // Check if user is already logged in on component mount
@@ -122,6 +153,7 @@ export default function WelcomeScreen() {
       case "otpLogin":
         return (
           <OTPLoginComponent
+            key={`otp-login-${otpLoginKey}`}
             onNext={handleNext}
             onSignUpRedirect={handleBackToWelcome}
             onLoginSuccess={handleNavigateToProfile}
@@ -133,6 +165,18 @@ export default function WelcomeScreen() {
             onBack={handleSignOutAndRefresh}
             onEditProfile={() => {
               // TODO: Add edit profile functionality
+            }}
+          />
+        );
+      case "plans":
+        return (
+          <PlansScreenComponent
+            onBack={() => setCurrentStep("userProfile")}
+            onPlanSelect={(planId) => {
+              console.log("Selected plan:", planId);
+              // TODO: Navigate to payment/checkout
+              // For now, just go to profile
+              setCurrentStep("userProfile");
             }}
           />
         );
@@ -257,7 +301,9 @@ export default function WelcomeScreen() {
 
   return (
     <>
-      {renderCurrentStep()}
+      <View key={currentStep} style={{ flex: 1 }}>
+        {renderCurrentStep()}
+      </View>
 
       <SkipPopup
         visible={showSkipPopup}

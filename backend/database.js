@@ -5,11 +5,15 @@ class Database {
   // User methods
   async createUser(userData) {
     const query = `
-      INSERT INTO users (mobile, name)
-      VALUES ($1, $2)
-      RETURNING id, mobile, name, english_level, learning_goals, skills_focus, speaking_partner, created_at, updated_at
+      INSERT INTO users (mobile, whatsapp_number, name)
+      VALUES ($1, $2, $3)
+      RETURNING id, mobile, whatsapp_number, name, english_level, learning_goals, skills_focus, speaking_partner, created_at, updated_at
     `;
-    const values = [userData.mobileNumber, userData.name];
+    const values = [
+      userData.mobileNumber, 
+      userData.whatsappNumber || userData.mobileNumber, // Use WhatsApp number or fallback to mobile
+      userData.name
+    ];
     
     try {
       const result = await pool.query(query, values);
@@ -18,7 +22,9 @@ class Database {
         id: user.id.toString(),
         userId: user.id.toString(),
         mobileNumber: user.mobile,
+        whatsappNumber: user.whatsapp_number,
         name: user.name,
+        fullName: user.name,
         englishLevel: user.english_level,
         learningGoals: user.learning_goals || [],
         skillsFocus: user.skills_focus || [],
@@ -33,7 +39,12 @@ class Database {
   }
 
   async findUserByMobile(mobileNumber) {
-    const query = 'SELECT * FROM users WHERE mobile = $1';
+    // Use WhatsApp number as the primary identifier for authentication
+    const query = `
+      SELECT * FROM users 
+      WHERE whatsapp_number = $1
+      LIMIT 1
+    `;
     const result = await pool.query(query, [mobileNumber]);
     
     if (result.rows.length === 0) return null;
@@ -43,6 +54,7 @@ class Database {
       id: user.id.toString(),
       userId: user.id.toString(),
       mobileNumber: user.mobile,
+      whatsappNumber: user.whatsapp_number,
       name: user.name,
       englishLevel: user.english_level,
       learningGoals: user.learning_goals || [],
@@ -454,27 +466,30 @@ class Database {
 
   // Membership registration methods (for form-based membership without payment)
   async findMembershipByMobile(mobileNumber) {
-    // Note: This searches in the users table for members who registered via membership form
-    // In the future, you might want a separate memberships_forms table
-    const query = 'SELECT * FROM users WHERE mobile = $1 AND whatsapp_number IS NOT NULL';
+    // Query the membership_registrations table using WhatsApp number as primary identifier
+    const query = `
+      SELECT * FROM membership_registrations 
+      WHERE whatsapp_number = $1
+      LIMIT 1
+    `;
     const result = await pool.query(query, [mobileNumber]);
     
     if (result.rows.length === 0) return null;
     
-    const user = result.rows[0];
+    const membership = result.rows[0];
     return {
-      id: user.id.toString(),
-      fullName: user.name,
-      mobileNumber: user.mobile,
-      whatsappNumber: user.whatsapp_number,
-      age: user.age,
-      gender: user.gender,
-      country: user.country,
-      englishSkills: user.english_skills || [],
-      highestQualification: user.highest_qualification,
-      speakingPartnerInterest: user.speaking_partner_interest,
-      aboutYou: user.about_you,
-      profilePhotoBase64: user.profile_photo
+      id: membership.id.toString(),
+      fullName: membership.full_name,
+      mobileNumber: membership.mobile_number,
+      whatsappNumber: membership.whatsapp_number,
+      age: membership.age,
+      gender: membership.gender,
+      country: membership.country,
+      englishSkills: membership.english_skills || [],
+      highestQualification: membership.highest_qualification,
+      speakingPartnerInterest: membership.speaking_partner_interest,
+      aboutYou: membership.about_you,
+      profilePhotoBase64: membership.profile_photo_base64
     };
   }
 

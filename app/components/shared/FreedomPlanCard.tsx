@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
   },
   priceSection: {
     padding: 20,
+    paddingVertical: 24,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -244,22 +245,26 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textDecorationLine: 'line-through',
     marginBottom: 4,
+    lineHeight: 22,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    marginVertical: 4,
   },
   currency: {
     fontSize: 24,
     fontWeight: '600',
     color: '#1F2937',
     marginTop: 4,
+    lineHeight: 32,
   },
   price: {
     fontSize: 48,
     fontWeight: '800',
     color: '#1F2937',
-    lineHeight: 56,
+    lineHeight: 58,
+    includeFontPadding: false,
   },
   savingsBadge: {
     backgroundColor: '#FEF3C7',

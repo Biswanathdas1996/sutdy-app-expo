@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
@@ -24,7 +25,7 @@ import { ApiService } from "@/app/services/apiService";
 interface MembershipFormModalProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (whatsappNumber?: string) => void;
 }
 
 interface FormData {
@@ -98,6 +99,20 @@ export const MembershipFormModal: React.FC<MembershipFormModalProps> = ({
     aboutYou: "",
     profilePhotoBase64: "",
   });
+
+  // Platform-specific alert helper
+  const showAlert = (title: string, message: string, onOk?: () => void) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}: ${message}`);
+      if (onOk) onOk();
+    } else {
+      if (onOk) {
+        Alert.alert(title, message, [{ text: "OK", onPress: onOk }]);
+      } else {
+        Alert.alert(title, message);
+      }
+    }
+  };
 
   // Load WhatsApp number from auth service
   useEffect(() => {
@@ -192,7 +207,7 @@ export const MembershipFormModal: React.FC<MembershipFormModalProps> = ({
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
+        showAlert(
           "Permission required",
           "Please allow access to your photo library to upload a profile photo."
         );
@@ -214,13 +229,13 @@ export const MembershipFormModal: React.FC<MembershipFormModalProps> = ({
             ...prev,
             profilePhotoBase64: compressedImage,
           }));
-          Alert.alert(
+          showAlert(
             "Photo uploaded",
             "It may take up to 48 hours to get your profile image approved."
           );
         } catch (error) {
           console.error("Error processing image:", error);
-          Alert.alert(
+          showAlert(
             "Error",
             "Failed to process the image. Please try again."
           );
@@ -230,73 +245,61 @@ export const MembershipFormModal: React.FC<MembershipFormModalProps> = ({
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert("Error", "Failed to pick image. Please try again.");
+      showAlert("Error", "Failed to pick image. Please try again.");
       setIsLoading(false);
     }
   };
 
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
-      Alert.alert("Validation Error", "Please enter your name.");
+      showAlert("Validation Error", "Please enter your name.");
       return false;
     }
     if (!formData.age.trim() || isNaN(Number(formData.age))) {
-      Alert.alert("Validation Error", "Please enter a valid age.");
+      showAlert("Validation Error", "Please enter a valid age.");
       return false;
     }
     if (!formData.gender) {
-      Alert.alert("Validation Error", "Please select your gender.");
+      showAlert("Validation Error", "Please select your gender.");
       return false;
     }
     if (!formData.country.trim()) {
-      Alert.alert("Validation Error", "Please enter your country.");
+      showAlert("Validation Error", "Please enter your country.");
       return false;
     }
     if (!formData.mobileNumber.trim()) {
-      Alert.alert("Validation Error", "Please enter your mobile number.");
+      showAlert("Validation Error", "Please enter your mobile number.");
       return false;
     }
     if (!formData.whatsappNumber.trim()) {
-      Alert.alert("Validation Error", "WhatsApp number is required.");
+      showAlert("Validation Error", "WhatsApp number is required.");
       return false;
     }
     if (!formData.englishSkills) {
-      Alert.alert("Validation Error", "Please select an English skill level.");
+      showAlert("Validation Error", "Please select an English skill level.");
       return false;
     }
     if (!formData.highestQualification.trim()) {
-      Alert.alert(
-        "Validation Error",
-        "Please enter your highest qualification."
-      );
+      showAlert("Validation Error", "Please enter your highest qualification.");
       return false;
     }
     if (!formData.speakingPartnerInterest) {
-      Alert.alert(
-        "Validation Error",
-        "Please select your speaking partner interest."
-      );
+      showAlert("Validation Error", "Please select your speaking partner interest.");
       return false;
     }
     if (
       formData.speakingPartnerInterest === "Other" &&
       !formData.speakingPartnerOther.trim()
     ) {
-      Alert.alert(
-        "Validation Error",
-        "Please specify your speaking partner interest."
-      );
+      showAlert("Validation Error", "Please specify your speaking partner interest.");
       return false;
     }
     if (!formData.aboutYou.trim()) {
-      Alert.alert("Validation Error", "Please write something about yourself.");
+      showAlert("Validation Error", "Please write something about yourself.");
       return false;
     }
     if (formData.aboutYou.length > 300) {
-      Alert.alert(
-        "Validation Error",
-        "About you section must be 300 characters or less."
-      );
+      showAlert("Validation Error", "About you section must be 300 characters or less.");
       return false;
     }
     return true;
@@ -376,27 +379,37 @@ export const MembershipFormModal: React.FC<MembershipFormModalProps> = ({
       );
 
       if (response.success) {
-        Alert.alert(
-          "Success!",
-          "Your membership application has been submitted successfully. Please login with your WhatsApp number to access your profile.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                onClose();
+        console.log("✅ Membership form submitted successfully");
+        const userWhatsAppNumber = submitData.whatsappNumber;
+        
+        // Stop loading immediately
+        setIsLoading(false);
+        
+        // Close modal first to prevent any UI conflicts
+        onClose();
+        
+        // Use requestAnimationFrame and setTimeout to ensure modal is fully closed
+        // before triggering navigation
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            showAlert(
+              "Welcome to SpeakEdge! 🎉",
+              "Congratulations to SpeakEdge family. Your SpeakEdge account is activated. Happy learning journey!",
+              () => {
+                // Navigate after alert is dismissed
                 if (onSuccess) {
-                  onSuccess();
+                  onSuccess(userWhatsAppNumber);
                 }
-              },
-            },
-          ]
-        );
+              }
+            );
+          }, 100);
+        });
       } else {
         throw new Error(response.message || "Failed to submit application");
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      Alert.alert(
+      showAlert(
         "Error",
         error instanceof Error
           ? error.message

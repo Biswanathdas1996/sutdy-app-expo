@@ -114,10 +114,12 @@ router.post('/membership-login', async (req, res) => {
   try {
     const { mobileNumber, otp } = req.body;
 
+    console.log('🔵 Membership login attempt with WhatsApp number:', mobileNumber);
+
     if (!mobileNumber || !otp) {
       return res.status(400).json({
         success: false,
-        message: 'Mobile number and OTP are required'
+        message: 'WhatsApp number and OTP are required'
       });
     }
 
@@ -130,19 +132,25 @@ router.post('/membership-login', async (req, res) => {
       });
     }
 
-    // Find membership by mobile
+    // Find membership by WhatsApp number
+    console.log('🔍 Looking for membership with WhatsApp number:', mobileNumber);
     const membership = await db.findMembershipByMobile(mobileNumber);
 
     if (!membership) {
+      console.log('❌ No membership found for WhatsApp number:', mobileNumber);
+      console.log('💡 User should complete membership registration first');
       return res.status(404).json({
         success: false,
-        message: 'No membership found for this mobile number'
+        message: 'No membership found for this WhatsApp number. Please complete membership registration first.'
       });
     }
 
-    // Find or create user
+    console.log('✅ Membership found:', membership.id);
+
+    // Find or create user using WhatsApp number
     let user = await db.findUserByMobile(mobileNumber);
     if (!user) {
+      console.log('🔵 Creating new user from membership data');
       user = await db.createUser({
         fullName: membership.fullName,
         userName: membership.fullName,
@@ -158,10 +166,14 @@ router.post('/membership-login', async (req, res) => {
         aboutYou: membership.aboutYou,
         profilePhotoBase64: membership.profilePhotoBase64
       });
+      console.log('✅ User created:', user.userId);
+    } else {
+      console.log('✅ Existing user found:', user.userId);
     }
 
     // Create session
     const session = await db.createSession(user.userId);
+    console.log('✅ Session created:', session.sessionId);
 
     res.json({
       success: true,
@@ -171,21 +183,21 @@ router.post('/membership-login', async (req, res) => {
       isNewUser: false,
       user: {
         id: user.userId,
-        name: user.fullName,
-        mobileNumber: user.mobileNumber,
-        whatsappNumber: user.whatsappNumber,
-        age: user.age,
-        gender: user.gender,
-        country: user.country,
-        englishSkills: user.englishSkills,
-        highestQualification: user.highestQualification,
-        speakingPartnerInterest: user.speakingPartnerInterest,
-        aboutYou: user.aboutYou,
-        profilePhotoBase64: user.profilePhotoBase64
+        name: membership.fullName,
+        mobileNumber: membership.mobileNumber,
+        whatsappNumber: membership.whatsappNumber,
+        age: membership.age,
+        gender: membership.gender,
+        country: membership.country,
+        englishSkills: membership.englishSkills,
+        highestQualification: membership.highestQualification,
+        speakingPartnerInterest: membership.speakingPartnerInterest,
+        aboutYou: membership.aboutYou,
+        profilePhotoBase64: membership.profilePhotoBase64
       }
     });
   } catch (error) {
-    console.error('Membership login error:', error);
+    console.error('❌ Membership login error:', error);
     res.status(500).json({
       success: false,
       message: 'Login failed',

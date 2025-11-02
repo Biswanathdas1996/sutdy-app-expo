@@ -104,22 +104,32 @@ export interface SpeakingPartnerUpdateResponse extends ApiResponse {
 
 // Plans Types
 export interface PlanFeature {
-  id: string;
-  name: string;
-  description: string;
+  id?: string;
+  name?: string;
+  description?: string;
 }
 
 export interface Plan {
   id: string;
   name: string;
   description: string;
+  price: number;
+  originalPrice?: number;
   duration: number;
-  cost: string;
-  isActive: boolean;
-  features: PlanFeature[];
-  subPlans: any[];
-  createdAt: string;
-  updatedAt: string;
+  aiMinutes: number;
+  validityMonths: number;
+  features: string[] | PlanFeature[];
+  isPopular: boolean;
+  planType: string;
+  category: string;
+  installmentOptions?: any;
+  demoClassUrl?: string;
+  subPlans?: any[];
+  createdAt?: string;
+  updatedAt?: string;
+  // Legacy fields for backward compatibility
+  cost?: string;
+  isActive?: boolean;
 }
 
 export interface PlansResponse extends ApiResponse {

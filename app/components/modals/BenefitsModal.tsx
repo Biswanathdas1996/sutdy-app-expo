@@ -12,7 +12,7 @@ import { router } from "expo-router";
 interface BenefitsModalProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (whatsappNumber?: string) => void;
 }
 
 const benefits = [
@@ -33,6 +33,7 @@ export const BenefitsModal: React.FC<BenefitsModalProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const [showMembershipForm, setShowMembershipForm] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const handleInterestPress = () => {
     setShowMembershipForm(true);
@@ -40,19 +41,36 @@ export const BenefitsModal: React.FC<BenefitsModalProps> = ({
 
   const handleMembershipFormClose = () => {
     setShowMembershipForm(false);
-    onClose(); // Close the benefits modal as well
+    // Don't close the benefits modal here - let handleMembershipSuccess handle it
   };
 
-  const handleMembershipSuccess = () => {
-    // Close modals first
+  const handleMembershipSuccess = (whatsappNumber?: string) => {
+    // Prevent multiple calls
+    if (isClosing) return;
+    setIsClosing(true);
+    
+    console.log("📋 BenefitsModal: Membership success, closing modals...");
+    
+    // Close both modals immediately
     setShowMembershipForm(false);
     onClose();
     
-    // Call the parent's onSuccess callback if provided
-    if (onSuccess) {
-      onSuccess();
-    }
+    // Use a longer delay to ensure complete modal cleanup before navigation
+    setTimeout(() => {
+      console.log("📋 BenefitsModal: Calling parent onSuccess...");
+      if (onSuccess) {
+        onSuccess(whatsappNumber);
+      }
+      setIsClosing(false);
+    }, 400);
   };
+
+  // Reset closing state when modal is opened
+  React.useEffect(() => {
+    if (visible) {
+      setIsClosing(false);
+    }
+  }, [visible]);
 
   return (
     <Modal

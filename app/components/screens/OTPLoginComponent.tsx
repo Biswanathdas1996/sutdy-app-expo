@@ -31,6 +31,38 @@ export const OTPLoginComponent: React.FC<OTPLoginComponentProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
+  const inputRef = React.useRef<TextInput>(null);
+
+  React.useEffect(() => {
+    console.log("🔵 OTPLoginComponent mounted");
+    // Reset loading state when component mounts
+    setIsLoading(false);
+    setMobileNumber("");
+    
+    // Focus the input after a short delay on web
+    if (Platform.OS === 'web') {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 500);
+    }
+    
+    return () => {
+      console.log("🔴 OTPLoginComponent unmounted");
+    };
+  }, []);
+
+  React.useEffect(() => {
+    console.log("📱 isLoading changed:", isLoading);
+  }, [isLoading]);
+
+  React.useEffect(() => {
+    console.log("📝 Mobile number changed:", mobileNumber);
+  }, [mobileNumber]);
+
+  const handleMobileNumberChange = (text: string) => {
+    console.log("✍️ User typing:", text);
+    setMobileNumber(text);
+  };
 
   React.useEffect(() => {
     Animated.parallel([
@@ -85,26 +117,48 @@ export const OTPLoginComponent: React.FC<OTPLoginComponentProps> = ({
 
       if (result.success) {
         console.log("OTP login successful, navigating to profile...");
-        Alert.alert("Success", result.message, [
-          {
-            text: "OK",
-            onPress: () => {
-              console.log("User pressed OK, navigating to profile");
-              if (onLoginSuccess) {
-                onLoginSuccess();
-              } else {
-                onNext();
-              }
+        
+        // Use web-compatible alert for browsers
+        if (typeof window !== 'undefined' && window.alert) {
+          window.alert(result.message || "Login successful!");
+          console.log("User dismissed alert, navigating to profile");
+          if (onLoginSuccess) {
+            onLoginSuccess();
+          } else {
+            onNext();
+          }
+        } else {
+          // Native mobile Alert
+          Alert.alert("Success", result.message, [
+            {
+              text: "OK",
+              onPress: () => {
+                console.log("User pressed OK, navigating to profile");
+                if (onLoginSuccess) {
+                  onLoginSuccess();
+                } else {
+                  onNext();
+                }
+              },
             },
-          },
-        ]);
+          ]);
+        }
       } else {
         console.log("OTP login failed:", result.message);
-        Alert.alert("Login Failed", result.message);
+        if (typeof window !== 'undefined' && window.alert) {
+          window.alert(result.message || "Login failed");
+        } else {
+          Alert.alert("Login Failed", result.message);
+        }
       }
     } catch (error) {
       console.error("OTP login error:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred. Please try again.";
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert("Error", errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -268,6 +322,7 @@ export const OTPLoginComponent: React.FC<OTPLoginComponentProps> = ({
                     <ThemedText style={styles.inputIcon}>📱</ThemedText>
                   </View>
                   <TextInput
+                    ref={inputRef}
                     style={[
                       styles.textInput,
                       {
@@ -284,9 +339,11 @@ export const OTPLoginComponent: React.FC<OTPLoginComponentProps> = ({
                         : Colors.light.textMuted
                     }
                     value={mobileNumber}
-                    onChangeText={setMobileNumber}
+                    onChangeText={handleMobileNumberChange}
                     keyboardType="phone-pad"
                     maxLength={15}
+                    editable={!isLoading}
+                    autoFocus={false}
                   />
                 </View>
               </View>
