@@ -32,7 +32,11 @@ const paymentsRoutes = require('./routes/payments');
 const membershipRoutes = require('./routes/membership');
 const installmentsRoutes = require('./routes/installments');
 const subscriptionsRoutes = require('./routes/subscriptions');
+const enrollmentsRoutes = require('./routes/enrollments');
 const demoRoutes = require('./routes/demo');
+const badgesRoutes = require('./routes/badges');
+const lessonsRoutes = require('./routes/lessons');
+const speakedgeRoutes = require('./routes/speakedge');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -43,7 +47,11 @@ app.use('/api/payments', paymentsRoutes);
 app.use('/api/membership', membershipRoutes);
 app.use('/api/installments', installmentsRoutes);
 app.use('/api/subscriptions', subscriptionsRoutes);
+app.use('/api/enrollments', enrollmentsRoutes);
 app.use('/api/demo', demoRoutes);
+app.use('/api/badges', badgesRoutes);
+app.use('/api/lessons', lessonsRoutes);
+app.use('/api/speakedge', speakedgeRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -111,6 +119,35 @@ app.get('/', (req, res) => {
         userBookings: 'GET /api/demo/user/:userId',
         complete: 'POST /api/demo/:bookingId/complete',
         upcoming: 'GET /api/demo/upcoming'
+      },
+      badges: {
+        progress: 'GET /api/badges/progress/:userId',
+        all: 'GET /api/badges/all/:userId',
+        addPoints: 'POST /api/badges/points/add',
+        pointsHistory: 'GET /api/badges/points/history/:userId',
+        leaderboard: 'GET /api/badges/leaderboard'
+      },
+      lessons: {
+        today: 'GET /api/lessons/today/:userId',
+        markViewed: 'PUT /api/lessons/mark-viewed/:assignmentId',
+        complete: 'POST /api/lessons/complete',
+        progress: 'GET /api/lessons/progress/:userId',
+        adminCreate: 'POST /api/lessons/admin/create',
+        adminBulkCreate: 'POST /api/lessons/admin/bulk-create'
+      },
+      speakedge: {
+        profile: 'GET /api/speakedge/profile/:userId',
+        updateProfile: 'PUT /api/speakedge/profile/:userId',
+        feed: 'GET /api/speakedge/feed/:userId',
+        createPost: 'POST /api/speakedge/posts/create',
+        react: 'POST /api/speakedge/posts/:postId/react',
+        comment: 'POST /api/speakedge/posts/:postId/comment',
+        searchPartners: 'GET /api/speakedge/partners/search/:userId',
+        sendInvite: 'POST /api/speakedge/partners/invite',
+        myPartners: 'GET /api/speakedge/partners/my/:userId',
+        notifications: 'GET /api/speakedge/notifications/:userId',
+        adPackages: 'GET /api/speakedge/ads/packages',
+        createAd: 'POST /api/speakedge/ads/create'
       }
     }
   });

@@ -81,6 +81,7 @@ class Database {
       learningGoals: user.learning_goals || [],
       skillsFocus: user.skills_focus || [],
       needsSpeakingPartner: user.speaking_partner,
+      profilePhoto: user.profile_photo,
       createdAt: user.created_at,
       updatedAt: user.updated_at
     };

@@ -17,6 +17,7 @@ export type StepType =
   | "otpLogin"
   | "userProfile"
   | "plans"
+  | "payment"
   | "intro"
   | "level"
   | "purpose"

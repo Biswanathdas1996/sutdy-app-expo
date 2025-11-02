@@ -16,6 +16,7 @@ export { AllPlansScreen } from "./screens/AllPlansScreen";
 export { default as DemoBookingScreen } from "./screens/DemoBookingScreen";
 export { default as SubscriptionManagementScreen } from "./screens/SubscriptionManagementScreen";
 export { PlansScreenComponent } from "./screens/PlansScreenComponent";
+export { PaymentScreenComponent } from "./screens/PaymentScreenComponent";
 
 // Modal Components
 export { SkipPopup } from "./modals/SkipPopup";

@@ -618,4 +618,37 @@ export class ApiService {
       };
     }
   }
+
+  /**
+   * Enroll user in a plan after payment
+   */
+  static async enrollUserInPlan(planId: string) {
+    try {
+      console.log("Enrolling user in plan:", planId);
+
+      const response = await this.post("/api/enrollments", { planId });
+
+      console.log("Enrollment response:", response);
+
+      return {
+        success: true,
+        message: response.message || "Successfully enrolled in plan",
+        data: response,
+      };
+    } catch (error) {
+      console.error("Enrollment error:", error);
+
+      if (error instanceof Error) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+
+      return {
+        success: false,
+        message: ERROR_MESSAGES.UNKNOWN_ERROR,
+      };
+    }
+  }
 }

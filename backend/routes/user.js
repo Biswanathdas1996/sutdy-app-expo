@@ -201,18 +201,21 @@ router.get('/profile-with-memberships', verifySession, async (req, res) => {
       });
     }
 
+    console.log('📋 User from DB:', user);
+
     res.json({
       success: true,
       message: 'Profile retrieved successfully',
       user: {
         id: user.userId,
-        userName: user.userName,
-        fullName: user.fullName,
+        userName: user.name,
+        fullName: user.name, // Use 'name' field as 'fullName'
         mobileNumber: user.mobileNumber,
         englishLevel: user.englishLevel,
         learningGoals: user.learningGoals,
         skillsFocus: user.skillsFocus,
         needsSpeakingPartner: user.needsSpeakingPartner,
+        profilePhoto: user.profilePhoto,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       },

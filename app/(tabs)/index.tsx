@@ -13,12 +13,15 @@ import {
   BenefitsModal,
   UserProfileComponent,
   PlansScreenComponent,
+  PaymentScreenComponent,
 } from "@/app/components";
 import { useSpeech } from "@/app/hooks/useSpeech";
 import { useOnboarding } from "@/app/hooks/useOnboarding";
 import { AuthService } from "@/app/services/authService";
+import { ApiService } from "@/app/services/apiService";
 import { ActivityIndicator, View } from "react-native";
 import { Colors } from "@/constants/Colors";
+import { Plan as ApiPlan } from "@/app/types/api";
 
 export default function WelcomeScreen() {
   const [name, setName] = useState("");
@@ -27,6 +30,8 @@ export default function WelcomeScreen() {
   const [showBenefitsModal, setShowBenefitsModal] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [otpLoginKey, setOtpLoginKey] = useState(0); // Force fresh OTP component
+  const [selectedPlan, setSelectedPlan] = useState<ApiPlan | null>(null);
+  const [allPlans, setAllPlans] = useState<ApiPlan[]>([]);
 
   const { isSpeaking, speakText, stopSpeaking } = useSpeech();
   const {
@@ -85,7 +90,19 @@ export default function WelcomeScreen() {
   // Check if user is already logged in on component mount
   useEffect(() => {
     checkAuthStatus();
+    loadPlans();
   }, []);
+
+  const loadPlans = async () => {
+    try {
+      const response = await ApiService.getPlans();
+      if (response.success && response.plans) {
+        setAllPlans(response.plans);
+      }
+    } catch (error) {
+      console.error("Error loading plans:", error);
+    }
+  };
 
   const checkAuthStatus = async () => {
     try {
@@ -173,12 +190,36 @@ export default function WelcomeScreen() {
           <PlansScreenComponent
             onBack={() => setCurrentStep("userProfile")}
             onPlanSelect={(planId) => {
-              console.log("Selected plan:", planId);
-              // TODO: Navigate to payment/checkout
-              // For now, just go to profile
+              console.log("Selected plan ID:", planId);
+              // Find the full plan object
+              const plan = allPlans.find(p => p.id === planId);
+              if (plan) {
+                setSelectedPlan(plan);
+                setCurrentStep("payment");
+              } else {
+                console.error("Plan not found:", planId);
+              }
+            }}
+          />
+        );
+      case "payment":
+        return selectedPlan ? (
+          <PaymentScreenComponent
+            plan={selectedPlan}
+            onBack={() => {
+              setSelectedPlan(null);
+              setCurrentStep("plans");
+            }}
+            onPaymentSuccess={() => {
+              setSelectedPlan(null);
               setCurrentStep("userProfile");
             }}
           />
+        ) : (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.light.background }}>
+            <ActivityIndicator size="large" color={Colors.light.primary} />
+            <ThemedText style={{ marginTop: 16 }}>Loading payment...</ThemedText>
+          </View>
         );
       case "intro":
         return (

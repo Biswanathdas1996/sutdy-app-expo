@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
@@ -17,6 +18,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { ModernButton } from "../shared/ModernButton";
 import { ApiService } from "@/app/services/apiService";
 import { AuthService } from "@/app/services/authService";
+import { BadgeProgressModal } from "../modals/BadgeProgressModal";
+import { TodayLessonModal } from "../modals/TodayLessonModal";
 
 interface UserProfile {
   id: string;
@@ -29,6 +32,7 @@ interface UserProfile {
   onboardingComplete?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  profilePhoto?: string;
 }
 
 interface Membership {
@@ -61,6 +65,21 @@ interface UserProfileComponentProps {
   onEditProfile?: () => void;
 }
 
+interface EnrolledPlan {
+  id: number;
+  planName: string;
+  planType: string;
+  planDescription?: string;
+  startDate: string;
+  expiryDate: string;
+  status: string;
+  aiMinutesTotal: number;
+  aiMinutesUsed: number;
+  aiMinutesRemaining: number;
+  validityMonths: number;
+  isActive: boolean;
+}
+
 export const UserProfileComponent: React.FC<UserProfileComponentProps> = ({
   onBack,
   onEditProfile,
@@ -72,7 +91,10 @@ export const UserProfileComponent: React.FC<UserProfileComponentProps> = ({
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [membershipCount, setMembershipCount] = useState<number>(0);
+  const [enrolledPlan, setEnrolledPlan] = useState<EnrolledPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [showLessonModal, setShowLessonModal] = useState(false);
 
   const loadUserProfile = async (showRefreshing = false) => {
     try {
@@ -133,6 +155,24 @@ export const UserProfileComponent: React.FC<UserProfileComponentProps> = ({
           throw new Error(response.message || "Failed to load profile");
         }
       }
+
+      // Load enrolled plan
+      try {
+        console.log("🔍 Fetching active enrollment...");
+        const enrollmentResponse = await ApiService.get('/api/enrollments/active');
+        console.log("📋 Enrollment response:", JSON.stringify(enrollmentResponse, null, 2));
+        
+        if (enrollmentResponse.success && enrollmentResponse.enrollment) {
+          console.log("✅ Active enrollment found:", enrollmentResponse.enrollment);
+          setEnrolledPlan(enrollmentResponse.enrollment);
+        } else {
+          console.log("⚠️ No active enrollment in response");
+          setEnrolledPlan(null);
+        }
+      } catch (enrollmentError) {
+        console.error("❌ Error fetching enrollment:", enrollmentError);
+        setEnrolledPlan(null);
+      }
     } catch (error) {
       console.error("Error loading user profile:", error);
       
@@ -183,6 +223,32 @@ export const UserProfileComponent: React.FC<UserProfileComponentProps> = ({
   useEffect(() => {
     loadUserProfile();
   }, []);
+
+  // Reload enrollment when screen comes into focus (e.g., after payment)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log("🔄 Profile screen focused - reloading enrollment...");
+      
+      const reloadEnrollment = async () => {
+        try {
+          const enrollmentResponse = await ApiService.get('/api/enrollments/active');
+          console.log("📋 Focused enrollment response:", JSON.stringify(enrollmentResponse, null, 2));
+          
+          if (enrollmentResponse.success && enrollmentResponse.enrollment) {
+            console.log("✅ Updated enrollment on focus:", enrollmentResponse.enrollment);
+            setEnrolledPlan(enrollmentResponse.enrollment);
+          } else {
+            console.log("⚠️ No active enrollment found on focus");
+            setEnrolledPlan(null);
+          }
+        } catch (error) {
+          console.error("❌ Error reloading enrollment on focus:", error);
+        }
+      };
+
+      reloadEnrollment();
+    }, [])
+  );
 
   const onRefresh = () => {
     loadUserProfile(true);
@@ -461,12 +527,45 @@ export const UserProfileComponent: React.FC<UserProfileComponentProps> = ({
             Profile
           </ThemedText>
         </View>
+        
+        {/* Badge Icon */}
+        <TouchableOpacity 
+          onPress={() => setShowBadgeModal(true)} 
+          style={{ marginRight: 16 }}
+        >
+          <View style={{ alignItems: "center" }}>
+            <MaterialIcons name="emoji-events" size={24} color="white" />
+          </View>
+        </TouchableOpacity>
+
+        {/* Lesson Icon */}
+        <TouchableOpacity 
+          onPress={() => setShowLessonModal(true)} 
+          style={{ marginRight: 16 }}
+        >
+          <View style={{ alignItems: "center" }}>
+            <MaterialIcons name="menu-book" size={24} color="white" />
+          </View>
+        </TouchableOpacity>
+
         {onEditProfile && (
           <TouchableOpacity onPress={onEditProfile}>
             <MaterialIcons name="edit" size={24} color="white" />
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Modals */}
+      <BadgeProgressModal
+        visible={showBadgeModal}
+        onClose={() => setShowBadgeModal(false)}
+        userId={userProfile?.id || ""}
+      />
+      <TodayLessonModal
+        visible={showLessonModal}
+        onClose={() => setShowLessonModal(false)}
+        userId={userProfile?.id || ""}
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -490,10 +589,10 @@ export const UserProfileComponent: React.FC<UserProfileComponentProps> = ({
           }}
         >
           <View style={{ alignItems: "center", marginBottom: 20 }}>
-            {/* Profile photo will come from membership data */}
-            {memberships[0]?.profilePhotoBase64 ? (
+            {/* Profile photo */}
+            {userProfile?.profilePhoto || memberships[0]?.profilePhotoBase64 ? (
               <Image
-                source={{ uri: memberships[0].profilePhotoBase64 }}
+                source={{ uri: userProfile?.profilePhoto || memberships[0]?.profilePhotoBase64 }}
                 style={{
                   width: 100,
                   height: 100,
@@ -507,22 +606,25 @@ export const UserProfileComponent: React.FC<UserProfileComponentProps> = ({
                   width: 100,
                   height: 100,
                   borderRadius: 50,
-                  backgroundColor:
-                    Colors[colorScheme ?? "light"].tabIconDefault + "30",
+                  backgroundColor: Colors.light.primary,
                   justifyContent: "center",
                   alignItems: "center",
                   marginBottom: 12,
                 }}
               >
-                <MaterialIcons
-                  name="person"
-                  size={48}
-                  color={Colors[colorScheme ?? "light"].tabIconDefault}
-                />
+                <ThemedText
+                  style={{
+                    fontSize: 36,
+                    fontWeight: "bold",
+                    color: "#fff",
+                  }}
+                >
+                  {userProfile?.fullName?.charAt(0)?.toUpperCase() || "U"}
+                </ThemedText>
               </View>
             )}
             <ThemedText style={{ fontSize: 24, fontWeight: "bold" }}>
-              {userProfile?.fullName || memberships[0]?.name || "N/A"}
+              {userProfile?.fullName || "N/A"}
             </ThemedText>
             <ThemedText
               style={{
@@ -589,6 +691,182 @@ export const UserProfileComponent: React.FC<UserProfileComponentProps> = ({
             )}
           </View>
         </View>
+
+        {/* Enrolled Plan Section */}
+        {enrolledPlan && (
+          <View
+            style={{
+              backgroundColor: Colors[colorScheme ?? "light"].background,
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 20,
+              borderWidth: 2,
+              borderColor: Colors.light.primary,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: Colors.light.primary + "20",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: 12,
+                }}
+              >
+                <MaterialIcons
+                  name="workspace-premium"
+                  size={28}
+                  color={Colors.light.primary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText style={{ fontSize: 18, fontWeight: "bold" }}>
+                  Active Plan
+                </ThemedText>
+                <ThemedText
+                  style={{
+                    fontSize: 12,
+                    color: Colors[colorScheme ?? "light"].tabIconDefault,
+                  }}
+                >
+                  Your current subscription
+                </ThemedText>
+              </View>
+              <View
+                style={{
+                  backgroundColor: "#10B981",
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                }}
+              >
+                <ThemedText style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
+                  ACTIVE
+                </ThemedText>
+              </View>
+            </View>
+
+            <View
+              style={{
+                backgroundColor: Colors.light.primary + "05",
+                padding: 16,
+                borderRadius: 12,
+                marginBottom: 16,
+              }}
+            >
+              <ThemedText style={{ fontSize: 20, fontWeight: "700", marginBottom: 8 }}>
+                {enrolledPlan.planName}
+              </ThemedText>
+              {enrolledPlan.planDescription && (
+                <ThemedText
+                  style={{
+                    fontSize: 13,
+                    color: Colors[colorScheme ?? "light"].tabIconDefault,
+                    marginBottom: 12,
+                  }}
+                >
+                  {enrolledPlan.planDescription}
+                </ThemedText>
+              )}
+
+              <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: Colors[colorScheme ?? "light"].background,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                  }}
+                >
+                  <MaterialIcons
+                    name="schedule"
+                    size={16}
+                    color={Colors.light.primary}
+                  />
+                  <ThemedText
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "600",
+                      marginLeft: 4,
+                      color: Colors.light.primary,
+                    }}
+                  >
+                    {enrolledPlan.validityMonths} month{enrolledPlan.validityMonths > 1 ? "s" : ""}
+                  </ThemedText>
+                </View>
+
+                {enrolledPlan.aiMinutesTotal > 0 && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: Colors[colorScheme ?? "light"].background,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="smart-toy"
+                      size={16}
+                      color={Colors.light.primary}
+                    />
+                    <ThemedText
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        marginLeft: 4,
+                        color: Colors.light.primary,
+                      }}
+                    >
+                      {enrolledPlan.aiMinutesRemaining}/{enrolledPlan.aiMinutesTotal} AI min
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            <View style={{ gap: 8 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <ThemedText
+                  style={{
+                    fontSize: 13,
+                    color: Colors[colorScheme ?? "light"].tabIconDefault,
+                  }}
+                >
+                  Start Date
+                </ThemedText>
+                <ThemedText style={{ fontSize: 13, fontWeight: "600" }}>
+                  {formatDate(enrolledPlan.startDate)}
+                </ThemedText>
+              </View>
+
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <ThemedText
+                  style={{
+                    fontSize: 13,
+                    color: Colors[colorScheme ?? "light"].tabIconDefault,
+                  }}
+                >
+                  Expires On
+                </ThemedText>
+                <ThemedText style={{ fontSize: 13, fontWeight: "600" }}>
+                  {formatDate(enrolledPlan.expiryDate)}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Memberships Section */}
         <View
