@@ -1,8 +1,45 @@
+import { Platform } from 'react-native';
+
+// Detect if running on physical device or emulator
+const getBaseUrl = () => {
+  // For web (browser)
+  if (Platform.OS === 'web') {
+    return "http://localhost:3000";
+  }
+  
+  // For physical devices (Android/iOS), use your computer's local IP
+  // Replace with your actual IP address from ipconfig/ifconfig
+  const LOCAL_IP = "192.168.1.6";
+  
+  // For Android emulator, use 10.0.2.2 (special alias for host machine)
+  // For iOS simulator, localhost works fine
+  if (Platform.OS === 'android') {
+    // Check if running on emulator or physical device
+    // Physical devices need the local IP
+    return `http://${LOCAL_IP}:3000`;
+  }
+  
+  if (Platform.OS === 'ios') {
+    // iOS simulator can use localhost
+    // Physical iOS device needs local IP
+    return `http://${LOCAL_IP}:3000`;
+  }
+  
+  // Fallback
+  return "http://localhost:3000";
+};
+
+// Log the base URL being used for debugging
+const BASE_URL = getBaseUrl();
+console.log(`📡 API Base URL: ${BASE_URL}`);
+console.log(`📱 Platform: ${Platform.OS}`);
+
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: "http://localhost:3000",
-  // For testing on physical device, use your computer's IP:
-  // BASE_URL: "http://192.168.x.x:3000",
+  BASE_URL: BASE_URL,
+  // Manual override if needed:
+  // BASE_URL: "http://192.168.1.6:3000", // For physical devices
+  // BASE_URL: "http://localhost:3000",    // For web/emulator
   // Original Replit URL (backup):
   // BASE_URL: "https://55c1e6e5-cc5c-43f8-a6bc-09dbe6a8787c-00-30mdf3t7vv0b7.riker.replit.dev",
   ENDPOINTS: {

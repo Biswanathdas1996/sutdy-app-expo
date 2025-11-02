@@ -134,11 +134,26 @@ app.use((req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server - Listen on all network interfaces (0.0.0.0) to accept connections from other devices
+app.listen(PORT, '0.0.0.0', () => {
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  let localIP = 'localhost';
+  
+  // Find local IP address
+  Object.keys(networkInterfaces).forEach((interfaceName) => {
+    networkInterfaces[interfaceName].forEach((iface) => {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        localIP = iface.address;
+      }
+    });
+  });
+  
   console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`📍 http://localhost:${PORT}`);
-  console.log(`💚 Health check: http://localhost:${PORT}/api/health\n`);
+  console.log(`📍 Local:    http://localhost:${PORT}`);
+  console.log(`� Network:  http://${localIP}:${PORT}`);
+  console.log(`�💚 Health:   http://localhost:${PORT}/api/health`);
+  console.log(`\n📲 For mobile devices, use: http://${localIP}:${PORT}\n`);
 }).on('error', (err) => {
   console.error('❌ Server error:', err);
   process.exit(1);
