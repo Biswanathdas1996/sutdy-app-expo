@@ -130,15 +130,33 @@ export class StorageService {
 
   static async clearUserSession(): Promise<void> {
     try {
+      console.log("🗑️ Clearing user session...");
+      
       await AsyncStorage.multiRemove([
         USER_SESSION_KEY,
         AUTH_TOKEN_KEY,
         SESSION_ID_KEY,
         USER_ID_KEY,
       ]);
-      console.log("User session cleared successfully");
+      
+      // Verify all keys were removed
+      const remainingToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      const remainingSession = await AsyncStorage.getItem(SESSION_ID_KEY);
+      const remainingUserId = await AsyncStorage.getItem(USER_ID_KEY);
+      
+      console.log("✅ User session cleared successfully");
+      console.log("Verification - remaining values:", {
+        token: remainingToken,
+        sessionId: remainingSession,
+        userId: remainingUserId,
+      });
+      
+      if (remainingToken || remainingSession || remainingUserId) {
+        console.warn("⚠️ Warning: Some session data may not have been cleared!");
+      }
     } catch (error) {
-      console.error("Error clearing user session:", error);
+      console.error("❌ Error clearing user session:", error);
+      throw error;
     }
   }
 

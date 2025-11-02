@@ -210,9 +210,41 @@ class Database {
       id: plan.id.toString(),
       name: plan.name,
       price: parseFloat(plan.price),
+      originalPrice: plan.original_price ? parseFloat(plan.original_price) : null,
       duration: plan.duration,
+      aiMinutes: plan.ai_minutes,
+      validityMonths: plan.validity_months,
       features: plan.features,
-      isPopular: plan.is_popular
+      isPopular: plan.is_popular,
+      planType: plan.plan_type,
+      category: plan.category,
+      description: plan.description,
+      installmentOptions: plan.installment_options,
+      demoClassUrl: plan.demo_class_url,
+      subPlans: plan.sub_plans
+    }));
+  }
+
+  async getPlansByType(planType) {
+    const query = 'SELECT * FROM plans WHERE plan_type = $1 ORDER BY price ASC';
+    const result = await pool.query(query, [planType]);
+    
+    return result.rows.map(plan => ({
+      id: plan.id.toString(),
+      name: plan.name,
+      price: parseFloat(plan.price),
+      originalPrice: plan.original_price ? parseFloat(plan.original_price) : null,
+      duration: plan.duration,
+      aiMinutes: plan.ai_minutes,
+      validityMonths: plan.validity_months,
+      features: plan.features,
+      isPopular: plan.is_popular,
+      planType: plan.plan_type,
+      category: plan.category,
+      description: plan.description,
+      installmentOptions: plan.installment_options,
+      demoClassUrl: plan.demo_class_url,
+      subPlans: plan.sub_plans
     }));
   }
 
@@ -227,9 +259,18 @@ class Database {
       id: plan.id.toString(),
       name: plan.name,
       price: parseFloat(plan.price),
+      originalPrice: plan.original_price ? parseFloat(plan.original_price) : null,
       duration: plan.duration,
+      aiMinutes: plan.ai_minutes,
+      validityMonths: plan.validity_months,
       features: plan.features,
-      isPopular: plan.is_popular
+      isPopular: plan.is_popular,
+      planType: plan.plan_type,
+      category: plan.category,
+      description: plan.description,
+      installmentOptions: plan.installment_options,
+      demoClassUrl: plan.demo_class_url,
+      subPlans: plan.sub_plans
     };
   }
 

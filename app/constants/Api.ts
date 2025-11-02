@@ -27,6 +27,9 @@ export const API_CONFIG = {
   ALLOWED_ORIGINS: ["http://localhost:8081", "exp://localhost:8081"],
 };
 
+// Export BASE_URL as API_URL for convenience
+export const API_URL = API_CONFIG.BASE_URL;
+
 // Error Messages
 export const ERROR_MESSAGES = {
   NETWORK_ERROR: "Network error. Please check your internet connection.",

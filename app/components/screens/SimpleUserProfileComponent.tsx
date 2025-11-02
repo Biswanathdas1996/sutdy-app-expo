@@ -25,6 +25,7 @@ export const SimpleUserProfileComponent: React.FC<
   const colorScheme = useColorScheme();
   const [userInfo, setUserInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
     loadUserInfo();
@@ -53,26 +54,70 @@ export const SimpleUserProfileComponent: React.FC<
     }
   };
 
-  const handleSignOut = async () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await AuthService.signOut();
-            onBack(); // Go back to welcome screen
-          } catch (error) {
-            console.error("Sign out error:", error);
-            Alert.alert("Error", "Failed to sign out");
-          }
+  const handleSignOut = () => {
+    console.log("🔴 handleSignOut called");
+    
+    Alert.alert(
+      "Sign Out", 
+      "Are you sure you want to sign out?", 
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => console.log("❌ Sign out cancelled"),
         },
-      },
-    ]);
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: () => {
+            console.log("🔵 Sign out confirmed - starting process...");
+            performSignOut();
+          },
+        },
+      ]
+    );
+  };
+
+  const performSignOut = async () => {
+    setIsSigningOut(true);
+    
+    try {
+      console.log("Step 1: Calling AuthService.signOut()...");
+      // Clear the session
+      await AuthService.signOut();
+      console.log("Step 2: Session cleared");
+      
+      // Verify session was cleared
+      console.log("Step 3: Verifying sign out...");
+      const isStillLoggedIn = await AuthService.isLoggedIn();
+      console.log("Step 4: After sign out, still logged in?", isStillLoggedIn);
+      
+      if (isStillLoggedIn) {
+        console.error("❌ Session was not properly cleared!");
+        Alert.alert("Error", "Failed to sign out. Please try again.");
+        setIsSigningOut(false);
+        return;
+      }
+      
+      // Clear local state
+      console.log("Step 5: Clearing local state...");
+      setUserInfo(null);
+      
+      // Go back to welcome screen
+      console.log("Step 6: Calling onBack()...");
+      onBack();
+      
+      console.log("✅ Sign out successful - all steps completed");
+      setIsSigningOut(false);
+    } catch (error) {
+      console.error("❌ Sign out error:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      Alert.alert("Error", `Failed to sign out: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsSigningOut(false);
+    }
   };
 
   const renderInfoCard = (
@@ -129,6 +174,16 @@ export const SimpleUserProfileComponent: React.FC<
 
   return (
     <View style={styles.container}>
+      {/* Loading Overlay for Sign Out */}
+      {isSigningOut && (
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.light.primary} />
+            <ThemedText style={styles.loadingText}>Signing out...</ThemedText>
+          </View>
+        </View>
+      )}
+      
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -304,12 +359,14 @@ export const SimpleUserProfileComponent: React.FC<
               {
                 backgroundColor: "rgba(239, 68, 68, 0.1)",
                 borderColor: "#ef4444",
+                opacity: isSigningOut ? 0.5 : 1,
               },
             ]}
             onPress={handleSignOut}
+            disabled={isSigningOut}
           >
             <ThemedText style={[styles.actionButtonText, { color: "#ef4444" }]}>
-              🚪 Sign Out
+              {isSigningOut ? "⏳ Signing Out..." : "🚪 Sign Out"}
             </ThemedText>
           </TouchableOpacity>
         </View>
@@ -326,6 +383,28 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  loadingContainer: {
+    backgroundColor: "white",
+    padding: 30,
+    borderRadius: 16,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   loadingText: {
     marginTop: 16,

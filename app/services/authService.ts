@@ -304,10 +304,19 @@ export class AuthService {
 
   static async signOut(): Promise<void> {
     try {
+      console.log("🚪 Signing out user...");
       await StorageService.clearUserSession();
-      console.log("User signed out successfully");
+      
+      // Verify sign out was successful
+      const isStillLoggedIn = await StorageService.isUserLoggedIn();
+      if (isStillLoggedIn) {
+        throw new Error("Sign out verification failed - user still logged in");
+      }
+      
+      console.log("✅ User signed out successfully");
     } catch (error) {
-      console.error("Sign out error:", error);
+      console.error("❌ Sign out error:", error);
+      throw error;
     }
   }
 

@@ -11,8 +11,8 @@ import {
   RecommendationComponent,
   SkipPopup,
   BenefitsModal,
+  UserProfileComponent,
 } from "@/app/components";
-import { SimpleUserProfileComponent } from "@/app/components/screens/SimpleUserProfileComponent";
 import { useSpeech } from "@/app/hooks/useSpeech";
 import { useOnboarding } from "@/app/hooks/useOnboarding";
 import { AuthService } from "@/app/services/authService";
@@ -44,6 +44,13 @@ export default function WelcomeScreen() {
     isLoading,
   } = useOnboarding();
 
+  const handleMembershipSuccess = () => {
+    // Close the benefits modal
+    setShowBenefitsModal(false);
+    // Navigate to OTP login screen
+    setCurrentStep("otpLogin");
+  };
+
   // Check if user is already logged in on component mount
   useEffect(() => {
     checkAuthStatus();
@@ -53,16 +60,48 @@ export default function WelcomeScreen() {
     try {
       setIsCheckingAuth(true);
       const isLoggedIn = await AuthService.isLoggedIn();
+      console.log("🔍 Checking auth status:", isLoggedIn);
       if (isLoggedIn) {
         const user = await AuthService.getCurrentUser();
-        console.log("User is logged in:", user);
+        console.log("✅ User is logged in:", user);
         // Navigate to profile if user is logged in
         setCurrentStep("userProfile");
+      } else {
+        console.log("❌ User is not logged in");
+        // Ensure we're on welcome screen if not logged in
+        setCurrentStep("welcome");
       }
     } catch (error) {
       console.error("Error checking auth status:", error);
+      setCurrentStep("welcome");
     } finally {
       setIsCheckingAuth(false);
+    }
+  };
+
+  // Handler for sign out that refreshes auth status
+  const handleSignOutAndRefresh = async () => {
+    console.log("🚪 handleSignOutAndRefresh called from profile");
+    
+    try {
+      // First, immediately navigate to welcome screen
+      console.log("📍 Step 1: Setting current step to welcome");
+      setCurrentStep("welcome");
+      
+      // Then recheck auth status to ensure we're logged out
+      console.log("📍 Step 2: Rechecking auth status");
+      const isStillLoggedIn = await AuthService.isLoggedIn();
+      console.log("🔍 Rechecking auth after sign out:", isStillLoggedIn);
+      
+      if (!isStillLoggedIn) {
+        console.log("✅ Sign out verified successfully");
+      } else {
+        console.error("⚠️ Warning: User still appears logged in after sign out!");
+      }
+    } catch (error) {
+      console.error("❌ Error during sign out refresh:", error);
+      // Ensure we're on welcome anyway
+      setCurrentStep("welcome");
     }
   };
 
@@ -90,8 +129,8 @@ export default function WelcomeScreen() {
         );
       case "userProfile":
         return (
-          <SimpleUserProfileComponent
-            onBack={handleBackToWelcome}
+          <UserProfileComponent
+            onBack={handleSignOutAndRefresh}
             onEditProfile={() => {
               // TODO: Add edit profile functionality
             }}
@@ -229,6 +268,7 @@ export default function WelcomeScreen() {
       <BenefitsModal
         visible={showBenefitsModal}
         onClose={() => setShowBenefitsModal(false)}
+        onSuccess={handleMembershipSuccess}
       />
     </>
   );

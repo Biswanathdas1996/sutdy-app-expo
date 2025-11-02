@@ -2,15 +2,33 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
-// Get all plans
+// Get all plans (with optional filtering by type)
 router.get('/', async (req, res) => {
   try {
-    const plans = await db.getAllPlans();
+    const { type } = req.query;
+    
+    let plans;
+    if (type) {
+      plans = await db.getPlansByType(type);
+    } else {
+      plans = await db.getAllPlans();
+    }
+
+    // Group plans by type for easier frontend consumption
+    const groupedPlans = plans.reduce((acc, plan) => {
+      const planType = plan.planType || 'basic';
+      if (!acc[planType]) {
+        acc[planType] = [];
+      }
+      acc[planType].push(plan);
+      return acc;
+    }, {});
 
     res.json({
       success: true,
       message: 'Plans retrieved successfully',
       plans: plans,
+      groupedPlans: groupedPlans,
       totalPlans: plans.length,
       testMetadata: {
         method: 'GET',

@@ -12,6 +12,7 @@ import { router } from "expo-router";
 interface BenefitsModalProps {
   visible: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 const benefits = [
@@ -28,6 +29,7 @@ const benefits = [
 export const BenefitsModal: React.FC<BenefitsModalProps> = ({
   visible,
   onClose,
+  onSuccess,
 }) => {
   const colorScheme = useColorScheme();
   const [showMembershipForm, setShowMembershipForm] = useState(false);
@@ -46,12 +48,10 @@ export const BenefitsModal: React.FC<BenefitsModalProps> = ({
     setShowMembershipForm(false);
     onClose();
     
-    // Navigate to login screen after successful registration
-    // The user will need to login with their WhatsApp number
-    setTimeout(() => {
-      // Reload the current route to show welcome/login screen
-      router.replace("/(tabs)");
-    }, 300);
+    // Call the parent's onSuccess callback if provided
+    if (onSuccess) {
+      onSuccess();
+    }
   };
 
   return (

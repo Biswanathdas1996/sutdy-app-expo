@@ -30,6 +30,9 @@ const plansRoutes = require('./routes/plans');
 const couponsRoutes = require('./routes/coupons');
 const paymentsRoutes = require('./routes/payments');
 const membershipRoutes = require('./routes/membership');
+const installmentsRoutes = require('./routes/installments');
+const subscriptionsRoutes = require('./routes/subscriptions');
+const demoRoutes = require('./routes/demo');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -38,6 +41,9 @@ app.use('/api/plans', plansRoutes);
 app.use('/api/coupons', couponsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/membership', membershipRoutes);
+app.use('/api/installments', installmentsRoutes);
+app.use('/api/subscriptions', subscriptionsRoutes);
+app.use('/api/demo', demoRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -79,6 +85,32 @@ app.get('/', (req, res) => {
       },
       membership: {
         register: 'POST /api/membership/register'
+      },
+      installments: {
+        createOrder: 'POST /api/installments/create-order',
+        verifyFirst: 'POST /api/installments/verify-first',
+        createSecondOrder: 'POST /api/installments/create-second-order',
+        verifySecond: 'POST /api/installments/verify-second',
+        pending: 'GET /api/installments/pending/:userId',
+        history: 'GET /api/installments/history/:userId'
+      },
+      subscriptions: {
+        create: 'POST /api/subscriptions/create',
+        enableAutoPay: 'POST /api/subscriptions/:id/enable-autopay',
+        disableAutoPay: 'POST /api/subscriptions/:id/disable-autopay',
+        cancel: 'POST /api/subscriptions/:id/cancel',
+        userSubscriptions: 'GET /api/subscriptions/user/:userId',
+        webhook: 'POST /api/subscriptions/webhook',
+        upcoming: 'GET /api/subscriptions/upcoming/:days'
+      },
+      demo: {
+        slots: 'GET /api/demo/slots',
+        book: 'POST /api/demo/book',
+        cancel: 'POST /api/demo/:bookingId/cancel',
+        reschedule: 'POST /api/demo/:bookingId/reschedule',
+        userBookings: 'GET /api/demo/user/:userId',
+        complete: 'POST /api/demo/:bookingId/complete',
+        upcoming: 'GET /api/demo/upcoming'
       }
     }
   });
